@@ -1,50 +1,74 @@
 #include <iostream>
+#include <stdio.h>
 #include <stdlib.h>
+#include <cstring>
+#include <conio.h>
 
 using namespace std;
 
-// Nodo para la pila
-struct nodopila
+// Pila para operadores
+struct nodopilachar
 {
     char dato;
-    struct nodopila *enlace;
+    struct nodopilachar *enlace;
 };
 
 // Prototipos
-void push(struct nodopila **top, char valor);
-char pop(struct nodopila **top);
-char verTope(struct nodopila *top);
+void pushChar(struct nodopilachar **top, char valor);
+char popChar(struct nodopilachar **top);
+char verTopeChar(struct nodopilachar *top);
 
 int prioridad(char operador);
 int esNumero(char c);
 int esOperador(char c);
 
-void convertirPosfija(char infija[], char posfija[]);
+void pasarAPosfija(char infija[], char posfija[]);
 
 int main()
 {
     char infija[100];
     char posfija[100];
+    int opcion;
 
-    cout << "Ingrese una operacion en notacion infija: ";
-    cin.getline(infija, 100);
+    do
+    {
+        system("CLS");
 
-    convertirPosfija(infija, posfija);
+        cout << "       PROYECTO DE PILAS" << endl;
+        cout << "1. Ingresar operacion" << endl;
+        cout << "2. Salir" << endl;
+        cout << "Seleccione una opcion: ";
+        cin >> opcion;
+        cin.ignore();
 
-    cout << endl;
-    cout << "Notacion posfija: " << posfija << endl;
+        if(opcion == 1)
+        {
+            system("CLS");
 
-    // Pendiente: evaluar la expresion posfija usando otra pila
+            cout << "Ingrese una operacion en notacion infija: ";
+            cin.getline(infija, 100);
+
+            pasarAPosfija(infija, posfija);
+
+            cout << endl;
+            cout << "Operacion en posfija: " << posfija << endl;
+
+            cout << endl;
+            cout << "Presione una tecla para volver al menu...";
+            getch();
+        }
+
+    }while(opcion != 2);
 
     return 0;
 }
 
-// Inserta en la pila
-void push(struct nodopila **top, char valor)
+// Inserta en pila
+void pushChar(struct nodopilachar **top, char valor)
 {
-    struct nodopila *nuevo;
+    struct nodopilachar *nuevo;
 
-    nuevo = (struct nodopila *) malloc(sizeof(struct nodopila));
+    nuevo = (struct nodopilachar *) malloc(sizeof(struct nodopilachar));
 
     if(nuevo != NULL)
     {
@@ -54,10 +78,10 @@ void push(struct nodopila **top, char valor)
     }
 }
 
-// Elimina 
-char pop(struct nodopila **top)
+// Elimina del tope
+char popChar(struct nodopilachar **top)
 {
-    struct nodopila *temp;
+    struct nodopilachar *temp;
     char valor;
 
     if(*top == NULL)
@@ -74,8 +98,8 @@ char pop(struct nodopila **top)
     return valor;
 }
 
-// Mira
-char verTope(struct nodopila *top)
+// Mira el tope
+char verTopeChar(struct nodopilachar *top)
 {
     if(top == NULL)
     {
@@ -101,7 +125,7 @@ int prioridad(char operador)
     return 0;
 }
 
-// Valida numeros de una cifra
+// Verifica numero
 int esNumero(char c)
 {
     if(c >= '0' && c <= '9')
@@ -112,7 +136,7 @@ int esNumero(char c)
     return 0;
 }
 
-// Valida operadores
+// Verifica operador
 int esOperador(char c)
 {
     if(c == '+' || c == '-' || c == '*' || c == '/')
@@ -124,9 +148,9 @@ int esOperador(char c)
 }
 
 // Convierte infija a posfija
-void convertirPosfija(char infija[], char posfija[])
+void pasarAPosfija(char infija[], char posfija[])
 {
-    struct nodopila *top = NULL;
+    struct nodopilachar *top = NULL;
     int i, j;
 
     j = 0;
@@ -138,20 +162,20 @@ void convertirPosfija(char infija[], char posfija[])
             continue;
         }
 
-    
+        // Multiplicacion implicita
         if(i > 0 && infija[i] == '(' && esNumero(infija[i - 1]) == 1)
         {
             while(top != NULL &&
-                  verTope(top) != '(' &&
-                  prioridad(verTope(top)) >= prioridad('*'))
+                  verTopeChar(top) != '(' &&
+                  prioridad(verTopeChar(top)) >= prioridad('*'))
             {
-                posfija[j] = pop(&top);
+                posfija[j] = popChar(&top);
                 j++;
                 posfija[j] = ' ';
                 j++;
             }
 
-            push(&top, '*');
+            pushChar(&top, '*');
         }
 
         // Numero directo a salida
@@ -163,47 +187,47 @@ void convertirPosfija(char infija[], char posfija[])
             j++;
         }
 
-        // Parentesis de apertura
+        // Parentesis que abre
         else if(infija[i] == '(')
         {
-            push(&top, infija[i]);
+            pushChar(&top, infija[i]);
         }
 
-        // Parentesis de cierre
+        // Parentesis que cierra
         else if(infija[i] == ')')
         {
-            while(top != NULL && verTope(top) != '(')
+            while(top != NULL && verTopeChar(top) != '(')
             {
-                posfija[j] = pop(&top);
+                posfija[j] = popChar(&top);
                 j++;
                 posfija[j] = ' ';
                 j++;
             }
 
-            pop(&top);
+            popChar(&top);
         }
 
         // Operadores
         else if(esOperador(infija[i]) == 1)
         {
             while(top != NULL &&
-                  verTope(top) != '(' &&
-                  prioridad(verTope(top)) >= prioridad(infija[i]))
+                  verTopeChar(top) != '(' &&
+                  prioridad(verTopeChar(top)) >= prioridad(infija[i]))
             {
-                posfija[j] = pop(&top);
+                posfija[j] = popChar(&top);
                 j++;
                 posfija[j] = ' ';
                 j++;
             }
 
-            push(&top, infija[i]);
+            pushChar(&top, infija[i]);
         }
     }
 
-    // Vaciar operadores restantes
+    // Vaciar la pila
     while(top != NULL)
     {
-        posfija[j] = pop(&top);
+        posfija[j] = popChar(&top);
         j++;
         posfija[j] = ' ';
         j++;
