@@ -6,11 +6,18 @@
 
 using namespace std;
 
-// Pila para operadores
+// Pila para guardar operadores y parentesis
 struct nodopilachar
 {
     char dato;
     struct nodopilachar *enlace;
+};
+
+// Pila para guardar numeros y resultados
+struct nodopilanum
+{
+    int dato;
+    struct nodopilanum *enlace;
 };
 
 // Prototipos
@@ -18,23 +25,28 @@ void pushChar(struct nodopilachar **top, char valor);
 char popChar(struct nodopilachar **top);
 char verTopeChar(struct nodopilachar *top);
 
+void pushNum(struct nodopilanum **top, int valor);
+int popNum(struct nodopilanum **top);
+
 int prioridad(char operador);
 int esNumero(char c);
 int esOperador(char c);
 
 void pasarAPosfija(char infija[], char posfija[]);
+int resolverPosfija(char posfija[]);
 
 int main()
 {
     char infija[100];
     char posfija[100];
+    int resultado;
     int opcion;
 
     do
     {
         system("CLS");
 
-        cout << "       PROYECTO DE PILAS" << endl;
+        cout << "PROYECTO DE PILAS" << endl;
         cout << "1. Ingresar operacion" << endl;
         cout << "2. Salir" << endl;
         cout << "Seleccione una opcion: ";
@@ -48,10 +60,16 @@ int main()
             cout << "Ingrese una operacion en notacion infija: ";
             cin.getline(infija, 100);
 
+            // Se convierte la expresion ingresada a posfija
             pasarAPosfija(infija, posfija);
 
             cout << endl;
             cout << "Operacion en posfija: " << posfija << endl;
+
+            // Se resuelve la expresion posfija
+            resultado = resolverPosfija(posfija);
+
+            cout << "Resultado: " << resultado << endl;
 
             cout << endl;
             cout << "Presione una tecla para volver al menu...";
@@ -63,11 +81,13 @@ int main()
     return 0;
 }
 
-// Inserta en pila
+// Pila de caracteres
+
 void pushChar(struct nodopilachar **top, char valor)
 {
     struct nodopilachar *nuevo;
 
+    // Se reserva memoria para un nuevo nodo
     nuevo = (struct nodopilachar *) malloc(sizeof(struct nodopilachar));
 
     if(nuevo != NULL)
@@ -78,7 +98,6 @@ void pushChar(struct nodopilachar **top, char valor)
     }
 }
 
-// Elimina del tope
 char popChar(struct nodopilachar **top)
 {
     struct nodopilachar *temp;
@@ -89,6 +108,7 @@ char popChar(struct nodopilachar **top)
         return '\0';
     }
 
+    // Se guarda el nodo del tope para eliminarlo
     temp = *top;
     valor = (*temp).dato;
     *top = (**top).enlace;
@@ -98,25 +118,66 @@ char popChar(struct nodopilachar **top)
     return valor;
 }
 
-// Mira el tope
 char verTopeChar(struct nodopilachar *top)
 {
     if(top == NULL)
     {
         return '\0';
     }
-
-    return (*top).dato;
+    else
+    {
+        return (*top).dato;
+    }
 }
 
-// Prioridad de operadores
+// Pila de numeros
+
+void pushNum(struct nodopilanum **top, int valor)
+{
+    struct nodopilanum *nuevo;
+
+    // Se crea un nodo para guardar el numero
+    nuevo = (struct nodopilanum *) malloc(sizeof(struct nodopilanum));
+
+    if(nuevo != NULL)
+    {
+        (*nuevo).dato = valor;
+        (*nuevo).enlace = *top;
+        *top = nuevo;
+    }
+}
+
+int popNum(struct nodopilanum **top)
+{
+    struct nodopilanum *temp;
+    int valor;
+
+    if(*top == NULL)
+    {
+        return 0;
+    }
+
+    // Se toma el valor del tope y se elimina
+    temp = *top;
+    valor = (*temp).dato;
+    *top = (**top).enlace;
+
+    free(temp);
+
+    return valor;
+}
+
+// Funciones auxiliares
+
 int prioridad(char operador)
 {
+    // Suma y resta tienen menor prioridad
     if(operador == '+' || operador == '-')
     {
         return 1;
     }
 
+    // Multiplicacion y division tienen mayor prioridad
     if(operador == '*' || operador == '/')
     {
         return 2;
@@ -125,29 +186,32 @@ int prioridad(char operador)
     return 0;
 }
 
-// Verifica numero
 int esNumero(char c)
 {
     if(c >= '0' && c <= '9')
     {
         return 1;
     }
-
-    return 0;
+    else
+    {
+        return 0;
+    }
 }
 
-// Verifica operador
 int esOperador(char c)
 {
     if(c == '+' || c == '-' || c == '*' || c == '/')
     {
         return 1;
     }
-
-    return 0;
+    else
+    {
+        return 0;
+    }
 }
 
-// Convierte infija a posfija
+// Conversion de infija a posfija
+
 void pasarAPosfija(char infija[], char posfija[])
 {
     struct nodopilachar *top = NULL;
@@ -155,6 +219,7 @@ void pasarAPosfija(char infija[], char posfija[])
 
     j = 0;
 
+    // Se recorre la expresion caracter por caracter
     for(i = 0; infija[i] != '\0'; i++)
     {
         if(infija[i] == ' ')
@@ -162,7 +227,6 @@ void pasarAPosfija(char infija[], char posfija[])
             continue;
         }
 
-        // Multiplicacion implicita
         if(i > 0 && infija[i] == '(' && esNumero(infija[i - 1]) == 1)
         {
             while(top != NULL &&
@@ -178,7 +242,22 @@ void pasarAPosfija(char infija[], char posfija[])
             pushChar(&top, '*');
         }
 
-        // Numero directo a salida
+        if(i > 0 && esNumero(infija[i]) == 1 && infija[i - 1] == ')')
+        {
+            while(top != NULL &&
+                  verTopeChar(top) != '(' &&
+                  prioridad(verTopeChar(top)) >= prioridad('*'))
+            {
+                posfija[j] = popChar(&top);
+                j++;
+                posfija[j] = ' ';
+                j++;
+            }
+
+            pushChar(&top, '*');
+        }
+
+        // Los numeros pasan directo a la salida
         if(esNumero(infija[i]) == 1)
         {
             posfija[j] = infija[i];
@@ -187,13 +266,13 @@ void pasarAPosfija(char infija[], char posfija[])
             j++;
         }
 
-        // Parentesis que abre
+        // El parentesis que abre se guarda en la pila
         else if(infija[i] == '(')
         {
             pushChar(&top, infija[i]);
         }
 
-        // Parentesis que cierra
+        // Al cerrar parentesis se sacan operadores hasta encontrar (
         else if(infija[i] == ')')
         {
             while(top != NULL && verTopeChar(top) != '(')
@@ -207,7 +286,7 @@ void pasarAPosfija(char infija[], char posfija[])
             popChar(&top);
         }
 
-        // Operadores
+        // Se comparan operadores segun su prioridad
         else if(esOperador(infija[i]) == 1)
         {
             while(top != NULL &&
@@ -224,7 +303,7 @@ void pasarAPosfija(char infija[], char posfija[])
         }
     }
 
-    // Vaciar la pila
+    // Se vacia la pila al terminar la expresion
     while(top != NULL)
     {
         posfija[j] = popChar(&top);
@@ -234,4 +313,58 @@ void pasarAPosfija(char infija[], char posfija[])
     }
 
     posfija[j] = '\0';
+}
+
+// Evaluacion de expresion posfija
+
+int resolverPosfija(char posfija[])
+{
+    struct nodopilanum *top = NULL;
+    int i;
+    int num1, num2, resultado;
+
+    // Se recorre la expresion posfija
+    for(i = 0; posfija[i] != '\0'; i++)
+    {
+        if(posfija[i] == ' ')
+        {
+            continue;
+        }
+
+        // Si es numero, se guarda en la pila
+        if(esNumero(posfija[i]) == 1)
+        {
+            pushNum(&top, posfija[i] - '0');
+        }
+
+        // Si es operador, se sacan dos numeros y se opera
+        else if(esOperador(posfija[i]) == 1)
+        {
+            num1 = popNum(&top);
+            num2 = popNum(&top);
+
+            if(posfija[i] == '+')
+            {
+                resultado = num2 + num1;
+            }
+            else if(posfija[i] == '-')
+            {
+                resultado = num2 - num1;
+            }
+            else if(posfija[i] == '*')
+            {
+                resultado = num2 * num1;
+            }
+            else if(posfija[i] == '/')
+            {
+                resultado = num2 / num1;
+            }
+
+            // El resultado vuelve a la pila
+            pushNum(&top, resultado);
+        }
+    }
+
+    // Resultado final
+    return popNum(&top);
 }
